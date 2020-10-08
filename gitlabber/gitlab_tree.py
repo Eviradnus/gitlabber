@@ -7,21 +7,20 @@ from .format import PrintFormat
 from .method import CloneMethod
 from .progress import ProgressBar
 import yaml
-import io
 import globre
 import logging
-import os
 log = logging.getLogger(__name__)
 
 
 class GitlabTree:
 
-    def __init__(self, url, token, method, includes=[], excludes=[], in_file=None, concurrency=1, disable_progress=False):
+    def __init__(self, url, token, method, includes=[], excludes=[], in_file=None,
+                 concurrency=1, disable_progress=False, ssl_verify=True):
         self.includes = includes
         self.excludes = excludes
         self.url = url
         self.root = Node("", root_path="", url=url)
-        self.gitlab = Gitlab(url, private_token=token)
+        self.gitlab = Gitlab(url, private_token=token, ssl_verify=ssl_verify)
         self.method = method
         self.in_file = in_file
         self.concurrency = concurrency
@@ -29,11 +28,11 @@ class GitlabTree:
         self.progress = ProgressBar('* loading tree', disable_progress)
 
     def is_included(self, node):
-        '''
+        """
         returns True if the node should be included.
         if there are no include patterns then everything is included
         any include patterns matching the root path will result in inclusion
-        '''
+        """
         if self.includes is not None:
             for include in self.includes:
                 if globre.match(include, node.root_path):
@@ -44,11 +43,11 @@ class GitlabTree:
             return True
 
     def is_excluded(self, node):
-        '''
+        """
         returns True if the node should be excluded 
         if the are no exclude patterns then nothing is excluded
         any exclude pattern matching the root path will result in exclusion
-        '''
+        """
         if self.excludes is not None:
             for exclude in self.excludes:
                 if globre.match(exclude, node.root_path):
@@ -84,7 +83,7 @@ class GitlabTree:
         projects = group.projects.list(as_list=False)
         self.progress.update_progress_length(len(projects))
         self.add_projects(parent, projects)
-       
+
 
     def get_subgroups(self, group, parent):
         subgroups = group.subgroups.list(as_list=False)

@@ -3,8 +3,7 @@ import os
 import sys
 import logging
 import logging.handlers
-import enum
-from argparse import ArgumentParser, RawTextHelpFormatter, FileType, SUPPRESS
+from argparse import ArgumentParser, RawTextHelpFormatter, SUPPRESS
 from .gitlab_tree import GitlabTree
 from .format import PrintFormat
 from .method import CloneMethod
@@ -12,6 +11,7 @@ from . import __version__ as VERSION
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 log = logging.getLogger(__name__)
+
 
 def main():
     args = parse_args(argv=None if sys.argv[1:] else ['--help'])
@@ -23,7 +23,7 @@ def main():
     includes=split(args.include)
     excludes=split(args.exclude)
     tree = GitlabTree(args.url, args.token, args.method, includes,
-                      excludes, args.file, args.concurrency, args.verbose)
+                      excludes, args.file, args.concurrency, args.verbose, not args.insecure)
     log.debug("Reading projects tree from gitlab at [%s]", args.url)
     tree.load_tree()
 
@@ -39,6 +39,7 @@ def main():
 
 def split(arg):
     return arg.split(",") if arg != "" else None
+
 
 def config_logging(args):
     if args.verbose:
@@ -90,6 +91,11 @@ def parse_args(argv=None):
         metavar=('token'),
         default=os.environ.get('GITLAB_TOKEN'),
         help='gitlab personal access token https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html')
+    parser.add_argument(
+        '-k',
+        '--insecure',
+        action='store_true',
+        help='enable broken SSL/TLS certificates (when URL has scheme HTTPs)')
     parser.add_argument(
         '-u',
         '--url',
@@ -152,6 +158,7 @@ def parse_args(argv=None):
     args_print['token'] = 'xxxxx'
     log.debug("running with args [%s]", args_print)
     return args
+
 
 def validate_path(value):
     if value.endswith('/'):
